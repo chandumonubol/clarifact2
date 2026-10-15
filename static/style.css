@@ -133,6 +133,34 @@ body::before {
   margin-bottom: 8px;
 }
 
+.input-bar {
+  display: flex !important;
+  align-items: center !important;
+  background-color: #1e1f20 !important;
+  border-radius: 28px !important;
+  padding: 8px 16px !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  gap: 12px !important;
+}
+
+.input-bar input {
+  flex: 1 1 auto !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: #e3e3e3 !important;
+  font-size: 15px !important;
+  min-width: 0 !important;
+}
+
+.input-bar button {
+  flex: 0 0 auto !important;
+  position: static !important;
+}
+
 .pill-container {
   display: flex;
   align-items: center;
