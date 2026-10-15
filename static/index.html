@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClariFact</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="spark-icon">✨</span>
+        <span>ClariFact</span>
+      </div>
+      <div class="sidebar-section">
+        <button class="sidebar-btn new-chat">New chat</button>
+        <h4>Recent</h4>
+        <div class="recent-list" id="recent-list">
+          <div class="empty-state">No analyses yet</div>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <small>ClariFact can make mistakes. Verify important information.</small>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="toolbar">
+        <h1 class="main-title">Where should we start?</h1>
+      </header>
+      <section class="input-section" id="input-section">
+        <div class="pill-container">
+          <button class="pill-btn add-btn" id="add-btn" aria-label="Attach file">
+            +
+          </button>
+          <input type="text" class="pill-input" id="text-input" placeholder="Paste a claim, caption, or link…">
+          <button class="pill-btn send-btn" id="send-btn" aria-label="Send">Send</button>
+        </div>
+        <p class="disclaimer">ClariFact can make mistakes. Verify important information.</p>
+      </section>
+      <div class="chat-area" id="chat-area">
+        <!-- messages and results inserted by JS -->
+      </div>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
