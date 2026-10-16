@@ -133,6 +133,8 @@ async def analyze(request: Request):
             "status": "queued",
             "step": STEPS[0],
             "current_step_index": 0,
+            "result": None,
+            "error": None,
         }
         # Start background step progression
         asyncio.create_task(_progress_job(job_id))
@@ -144,6 +146,8 @@ async def analyze(request: Request):
             "status": "queued",
             "step": STEPS[0],
             "current_step_index": 0,
+            "result": None,
+            "error": None,
         }
         asyncio.create_task(_progress_job(job_id))
         return {"job_id": job_id}
@@ -173,12 +177,18 @@ async def jobs(job_id: str):
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=8001)
-    
+    import argparse, uvicorn
+    parser = argparse.ArgumentParser(description='Run mock FastAPI server')
+    parser.add_argument('--port', type=int, default=8001, help='Port to listen on')
+    args = parser.parse_args()
+    uvicorn.run(app, host='127.0.0.1', port=args.port)
+
 async def _progress_job(job_id: str):
     """Walk through 5 fake steps (~1s each) then return hardcoded analysis result."""
     job = JOBS[job_id]
+    # Mark as running
+    job["status"] = "running"
+    JOBS[job_id] = job
     try:
         for i, step in enumerate(STEPS, start=1):
             await asyncio.sleep(1)  # ~1 second per step
