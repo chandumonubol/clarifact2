@@ -117,7 +117,7 @@
     `;
     elements.chatArea.appendChild(scoreCard);
 
-    const labelMap = { Credible: 'green', 'Use caution': 'amber', 'Likely misleading': 'red' };
+    const labelMap = { Credible: 'var(--good-text)', 'Use caution': 'var(--caution-text)', 'Likely misleading': 'var(--bad-text)' };
     const labelColor = labelMap[result.label] || 'red';
     const scoreRing = scoreCard.querySelector('.progress');
     if (scoreRing) {
@@ -273,8 +273,8 @@
 
     // POST /analyze
     // Mark UI as having sent first message
-    if (!document.body.classList.contains('sent')) {
-      document.body.classList.add('sent');
+    if (!document.body.classList.contains('has-messages')) {
+      document.body.classList.add('has-messages');
     }
     try {
       const resp = await fetch('/analyze', {
@@ -349,6 +349,8 @@
           elements.addBtn.style.background = 'none';
         }
       }
+      // clear job state after rendering results
+      state.jobId = null;
     };
     input.click();
   };
@@ -370,11 +372,8 @@
     elements.newChatBtn.onclick = () => {
       // clear chat area
       elements.chatArea.innerHTML = '';
-      // reset sent state
-      document.body.classList.remove('sent');
-      // show heading again
-      const heading = document.querySelector('.main-title');
-      if (heading) heading.style.display = '';
+      // reset UI state
+      document.body.classList.remove('has-messages');
       // reset state
       state.jobId = null;
       state.selectedFile = null;

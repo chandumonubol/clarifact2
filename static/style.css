@@ -382,7 +382,15 @@ html, body {
   border-radius: var(--radius-sm);
 }
 
-/* Selection */
+/* Global link style */
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
 ::selection {
   background: var(--link);
   color: #fff;
@@ -397,9 +405,24 @@ html, body {
 }
 
 /* Sent state – hide heading & make input sticky */
-.sent .main-title { display: none; }
-.sent .main { justify-content: flex-start; }
-.sent .input-bar { position: sticky; bottom: 0; z-index: 10; }
+.has-messages .main-title { display: none; }
+.has-messages .main { justify-content: flex-start; }
+      .has-messages .input-bar { position: sticky; bottom: 0; z-index: 10; }
+
+/* Message bubbles */
+.message.user {
+  align-self: flex-end;
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  max-width: 70%;
+  padding: 12px 16px;
+  margin: 0 0 var(--space-24) auto;
+}
+.message.ai {
+  align-self: flex-start;
+}
+
 
 /* Hide sidebar on narrow screens */
 @media (max-width: 800px) {
