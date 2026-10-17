@@ -12,7 +12,7 @@ and returns a hardcoded sample AnalysisResult.
 import uuid
 import asyncio
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -118,39 +118,14 @@ async def static_files(path: str):
 
 
 @app.post("/analyze")
-async def analyze(request: Request):
+async def analyze(text: str = Form(None), file: UploadFile = File(None), url: str = Form(None)):
     """POST /analyze — multipart form: text (optional str), file (optional upload), url (optional str)"""
-    form = await request.form()
-    text = form.get("text")
-    url = form.get("url") if "url" in form else None
-    file = form.get("file")
+    job_id = str(uuid.uuid4())
+    JOBS[job_id] = {"status": "queued", "step": "Queued", "result": None}
+    asyncio.create_task(_progress_job(job_id))
+    return {"job_id": job_id}
 
-    # If text starts with http, treat as url; otherwise as text
-    if text and (text.startswith("http://") or text.startswith("https://")):
-        job_id = str(uuid.uuid4())
-        JOBS[job_id] = {
-            "job_id": job_id,
-            "status": "queued",
-            "step": STEPS[0],
-            "current_step_index": 0,
-            "result": None,
-            "error": None,
-        }
-        # Start background step progression
-        asyncio.create_task(_progress_job(job_id))
-        return {"job_id": job_id}
-    else:
-        job_id = str(uuid.uuid4())
-        JOBS[job_id] = {
-            "job_id": job_id,
-            "status": "queued",
-            "step": STEPS[0],
-            "current_step_index": 0,
-            "result": None,
-            "error": None,
-        }
-        asyncio.create_task(_progress_job(job_id))
-        return {"job_id": job_id}
+
 
 
 @app.get("/jobs/{job_id}")
@@ -176,12 +151,7 @@ async def jobs(job_id: str):
 # Background: progress through 5 steps then return result
 # ---------------------------------------------------------------------------
 
-if __name__ == '__main__':
-    import argparse, uvicorn
-    parser = argparse.ArgumentParser(description='Run mock FastAPI server')
-    parser.add_argument('--port', type=int, default=8001, help='Port to listen on')
-    args = parser.parse_args()
-    uvicorn.run(app, host='127.0.0.1', port=args.port)
+# __main__ block will be defined after background task definition
 
 async def _progress_job(job_id: str):
     """Walk through 5 fake steps (~1s each) then return hardcoded analysis result."""
@@ -206,3 +176,10 @@ async def _progress_job(job_id: str):
         job["status"] = "error"
         job["error"] = str(e)
         JOBS[job_id] = job
+
+if __name__ == '__main__':
+    import argparse, uvicorn
+    parser = argparse.ArgumentParser(description='Run mock FastAPI server')
+    parser.add_argument('--port', type=int, default=8001, help='Port to listen on')
+    args = parser.parse_args()
+    uvicorn.run(app, host='127.0.0.1', port=args.port)

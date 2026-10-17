@@ -14,13 +14,20 @@
     recentList: document.getElementById('recent-list'),
   };
 
-  // Escape text for DOM insertion
-  const esc = (s) => String(s).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
+  // Escape text for DOM insertion (basic HTML escaping)
+  const esc = (s) => {
+    const str = String(s);
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+  };
 
   // Show a message bubble in the chat
   const addMessage = (msg) => {
     const div = document.createElement('div');
-    div.className = 'message';
+    div.className = 'message ' + (msg.type === 'user' ? 'user' : 'ai');
     div.dataset.id = msg.id;
 
     const meta = document.createElement('div');
@@ -246,9 +253,14 @@
     formData.append('text', formText);
 
     // If there's a file attached from the file picker
-    if (state.selectedFile) {
-      formData.append('file', state.selectedFile);
+    const attachedFile = state.selectedFile;
+    if (attachedFile) {
+      formData.append('file', attachedFile);
     }
+
+    // Preserve file info for user message before clearing state
+    const fileNameForMsg = attachedFile ? attachedFile.name : null;
+    const thumbnailForMsg = attachedFile ? URL.createObjectURL(attachedFile) : null;
 
     // Clear input
     elements.textInput.value = '';
@@ -261,8 +273,8 @@
       id: 'user-' + Date.now(),
       type: 'user',
       text: formText,
-      fileName: state.selectedFile ? state.selectedFile.name : null,
-      thumbnail: state.selectedFile ? URL.createObjectURL(state.selectedFile) : null,
+      fileName: fileNameForMsg,
+      thumbnail: thumbnailForMsg,
     });
 
     // POST /analyze
