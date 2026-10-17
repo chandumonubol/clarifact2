@@ -23,7 +23,6 @@ from fastapi.staticfiles import StaticFiles
 app = FastAPI()
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
-app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -177,9 +176,10 @@ async def _progress_job(job_id: str):
         job["error"] = str(e)
         JOBS[job_id] = job
 
-if __name__ == '__main__':
-    import argparse, uvicorn
-    parser = argparse.ArgumentParser(description='Run mock FastAPI server')
-    parser.add_argument('--port', type=int, default=8001, help='Port to listen on')
-    args = parser.parse_args()
-    uvicorn.run(app, host='127.0.0.1', port=args.port)
+app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+
+import argparse, uvicorn
+parser = argparse.ArgumentParser(description='Run mock FastAPI server')
+parser.add_argument('--port', type=int, default=8001, help='Port to listen on')
+args = parser.parse_args()
+uvicorn.run(app, host='127.0.0.1', port=args.port)
