@@ -20,6 +20,14 @@ from fastapi.staticfiles import StaticFiles
 # ---------------------------------------------------------------------------
 # App & static serving
 # ---------------------------------------------------------------------------
+# Add no‑store header for static assets (development)
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith('/') or request.url.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
 app = FastAPI()
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
@@ -54,8 +62,8 @@ def _hardcoded_result():
         "promo": {
             "detected": True,
             "type": "hidden",
-            "evidence": ["● The product claims 'miraculous cure' with no scientific backing",
-                        "● Uses 'limited time offer' pressure tactic"],
+            "evidence": ["The product claims 'miraculous cure' with no scientific backing",
+                        "Uses 'limited time offer' pressure tactic"],
         },
         "claims": [
             {
