@@ -12,6 +12,7 @@
     inputSection: document.querySelector('.input-section'),
     chatArea: document.querySelector('.chat-area'),
     recentList: document.getElementById('recent-list'),
+    newChatBtn: document.querySelector('.sidebar-btn.new-chat'),
   };
 
   // Escape text for DOM insertion (basic HTML escaping)
@@ -98,14 +99,7 @@
     // Clear existing progress
     removeProgress();
 
-    // Clear chat area of messages except maybe recent ones? We'll keep user message and add result view
-    // Actually we add a system message and then the cards
-    const systemMsg = {
-      id: 'results-' + Date.now(),
-      type: 'ai',
-      text: '',
-    };
-    addMessage(systemMsg);
+    // Clear chat area for results
 
     // 1. Score ring + label + confidence chip
     const scoreCard = document.createElement('div');
@@ -153,7 +147,7 @@
     promoCard.classList.add('promo-banner', promoClass);
     promoCard.innerHTML = `
       <span class="type">Promotion: ${promoType}</span>
-      <div class="evidence">${result.promo.evidence.map(e => `<span class="item">• ${e}</span>`).join('')}</div>
+      <ul class="evidence">${result.promo.evidence.map(e => `<li>${e}</li>`).join('')}</ul>
     `;
     elements.chatArea.appendChild(promoCard);
 
@@ -165,7 +159,7 @@
     claimsList.className = 'claims-list';
     result.claims.forEach((c, i) => {
       const verdictClass = { supported: 'supported', contradicted: 'contradicted', misleading: 'misleading', unverified: 'unverified' }[c.verdict] || 'unverified';
-      const srcHtml = c.sources && c.sources.length ? c.sources.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(', ') : '<em>none</em>';
+      const srcHtml = c.sources && c.sources.length ? c.sources.map(s => `<a class="source-chip" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(' ') : '<em>none</em>';
       const item = document.createElement('div');
       item.className = `claim-item`;
       item.innerHTML = `<div class="claim-verdict ${verdictClass}">${c.verdict}</div><div class="claim-text">${esc(c.text)}</div><div class="claim-explanation">${esc(c.explanation)}</div><div class="sources-list">${srcHtml}</div>`;
@@ -278,6 +272,10 @@
     });
 
     // POST /analyze
+    // Mark UI as having sent first message
+    if (!document.body.classList.contains('sent')) {
+      document.body.classList.add('sent');
+    }
     try {
       const resp = await fetch('/analyze', {
         method: 'POST',
@@ -367,5 +365,24 @@
   };
 
   // Init
+  // New chat button – reset UI
+  if (elements.newChatBtn) {
+    elements.newChatBtn.onclick = () => {
+      // clear chat area
+      elements.chatArea.innerHTML = '';
+      // reset sent state
+      document.body.classList.remove('sent');
+      // show heading again
+      const heading = document.querySelector('.main-title');
+      if (heading) heading.style.display = '';
+      // reset state
+      state.jobId = null;
+      state.selectedFile = null;
+      elements.textInput.value = '';
+      elements.addBtn.textContent = '+';
+      elements.addBtn.title = 'Attach file';
+      elements.addBtn.style.background = 'none';
+    };
+  }
   elements.addBtn.onclick();
 })();
