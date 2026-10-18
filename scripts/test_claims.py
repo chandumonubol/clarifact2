@@ -7,6 +7,9 @@ Creates a minimal :class:`ExtractedContent` with the supplied *text* and empty
 transcript/ocr fields, runs :func:`app.claims.analyze`, and pretty‑prints the
 resulting :class:`Signals` as JSON.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import argparse
 import json

@@ -4,6 +4,9 @@ Usage:
 It prints the provider used, the latency in seconds, and the parsed JSON result.
 If the LLM call fails (e.g., Ollama not reachable) it prints a clear error message.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import sys
 import time
