@@ -136,10 +136,6 @@ def extract_from_video(path: str, progress: interfaces.ProgressFn | None = None)
             progress("Reading on-screen text")
         frames_pattern = os.path.join(tmpdir, "frame_%04d.png")
         ffmpeg_frames = _run_cmd([
-            "ffffmpeg",  # intentionally wrong to trigger warning if ffmpeg missing; will be overridden below
-        ], timeout=30)
-        # Correct ffmpeg command:
-        ffmpeg_frames = _run_cmd([
             "ffmpeg",
             "-y",
             "-i",
