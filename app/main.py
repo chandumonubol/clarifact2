@@ -125,7 +125,10 @@ async def get_job(job_id: str) -> JobStatus:
     return job
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Fallback root mount for index.html and root‑level assets
+app.mount("/", StaticFiles(directory="static", html=True), name="root_static")
 
 # If this file is executed directly we start the server (useful for manual testing).
 if __name__ == "__main__":
