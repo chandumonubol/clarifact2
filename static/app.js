@@ -16,19 +16,7 @@
     newChatBtn: document.querySelector('.sidebar-btn.new-chat'),
   };
 
-  // Initialize send button disabled state
-elements.sendBtn.disabled = true;
-
-// Update send button enable/disable based on content
-const updateSendButton = () => {
-  const text = elements.textInput.value.trim();
-  const hasFile = elements.fileInput && elements.fileInput.files.length > 0;
-  elements.sendBtn.disabled = !(text.length > 0 || hasFile);
-};
-
-// Listen for input changes
-elements.textInput.addEventListener('input', updateSendButton);
-
+  /* Send button enable/disable logic removed per UI simplification */
   const esc = (s) => {
     const str = String(s);
     return str.replace(/&/g, '&amp;')
@@ -340,45 +328,67 @@ elements.textInput.addEventListener('input', updateSendButton);
     }
   };
 
-  // File picker
-  const pickFile = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,video/';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        state.selectedFile = file;
-        elements.addBtn.textContent = file.name.slice(0, 15) + (file.name.length > 15 ? '…' : '');
-        elements.addBtn.title = file.name;
-        // Show thumbnail for images
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            elements.addBtn.style.background = `url(${e.target.result}) center/contain no-repeat`;
-            elements.addBtn.style.backgroundSize = 'contain';
-          };
-          reader.readAsDataURL(file);
-        } else {
-          elements.addBtn.style.background = 'none';
-        }
-      }
-      // clear job state after rendering results
-      state.jobId = null;
-    };
-    input.click();
-  };
-
-  elements.addBtn.onclick = () => { elements.fileInput.click(); };
-  elements.sendBtn.onclick = send;
-
-  // Enter to send, Shift+Enter for newline
-  elements.textInput.onkeydown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
+  // File input change handling
+  elements.fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      state.selectedFile = file;
+      elements.filePreview.textContent = file.name;
+      elements.filePreview.style.display = 'flex';
+    } else {
+      state.selectedFile = null;
+      elements.filePreview.textContent = '';
+      elements.filePreview.style.display = 'none';
     }
-  };
+  });
+
+  // Form submit handling
+  const analyzeForm = document.getElementById('analyze-form');
+  if (analyzeForm) {
+    analyzeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const textVal = elements.textInput.value.trim();
+      const fileVal = elements.fileInput.files[0];
+      if (!textVal && !fileVal) {
+        return;
+      }
+      const formData = new FormData();
+      if (textVal) formData.append('text', textVal);
+      if (fileVal) formData.append('file', fileVal);
+
+      // Show user message
+      addMessage({
+        id: 'user-' + Date.now(),
+        type: 'user',
+        text: textVal,
+        fileName: fileVal ? fileVal.name : null,
+        thumbnail: fileVal ? URL.createObjectURL(fileVal) : null,
+      });
+
+      // Clear inputs
+      elements.textInput.value = '';
+      elements.fileInput.value = '';
+      elements.filePreview.textContent = '';
+      elements.filePreview.style.display = 'none';
+      state.selectedFile = null;
+
+      // Mark UI as having sent first message
+      if (!document.body.classList.contains('has-messages')) {
+        document.body.classList.add('has-messages');
+      }
+      try {
+        const resp = await fetch('/analyze', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'API error');
+        state.jobId = data.job_id;
+        pollJob();
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+  }
+
+  // Removed old file picker and button click logic
 
   // Init
   // New chat button – reset UI
