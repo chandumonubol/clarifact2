@@ -518,7 +518,26 @@ a:hover {
   to { transform: rotate(360deg); }
 }
 
-/* Responsive cards – shrink padding on narrow screens */
+/* File preview badge */
+.file-preview {
+  display: inline-block;
+  margin-left: var(--space-8);
+  padding: var(--space-4) var(--space-8);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ensure upload button stays leftmost */
+#add-btn {
+  flex-shrink: 0;
+  min-width: 40px;
+}
+
 @media (max-width: 600px) {
   .result-card {
     padding: var(--space-12);
