@@ -9,13 +9,26 @@
     textInput: document.getElementById('text-input'),
     sendBtn: document.getElementById('send-btn'),
     addBtn: document.getElementById('add-btn'),
-    inputSection: document.querySelector('.input-section'),
+    fileInput: document.getElementById('file-input'),
+    filePreview: document.getElementById('file-preview'),
     chatArea: document.querySelector('.chat-area'),
     recentList: document.getElementById('recent-list'),
     newChatBtn: document.querySelector('.sidebar-btn.new-chat'),
   };
 
-  // Escape text for DOM insertion (basic HTML escaping)
+  // Initialize send button disabled state
+elements.sendBtn.disabled = true;
+
+// Update send button enable/disable based on content
+const updateSendButton = () => {
+  const text = elements.textInput.value.trim();
+  const hasFile = elements.fileInput && elements.fileInput.files.length > 0;
+  elements.sendBtn.disabled = !(text.length > 0 || hasFile);
+};
+
+// Listen for input changes
+elements.textInput.addEventListener('input', updateSendButton);
+
   const esc = (s) => {
     const str = String(s);
     return str.replace(/&/g, '&amp;')
@@ -356,7 +369,7 @@
     input.click();
   };
 
-  elements.addBtn.onclick = pickFile;
+  elements.addBtn.onclick = () => { elements.fileInput.click(); };
   elements.sendBtn.onclick = send;
 
   // Enter to send, Shift+Enter for newline
@@ -384,5 +397,5 @@
       elements.addBtn.style.background = 'none';
     };
   }
-  elements.addBtn.onclick();
+  // elements.addBtn.onclick();
 })();
