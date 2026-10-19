@@ -114,8 +114,8 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
             try:
                 ddgs = DDGS()
                 results = list(ddgs.text(q, max_results=5))
-if not results:
-    raise ValueError("Empty DDGS results")
+                if not results:
+                    raise ValueError("Empty DDGS results")
                 for r in results:
                     title = r.get("title", "")
                     url = r.get("url", "")
