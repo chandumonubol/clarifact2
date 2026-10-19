@@ -158,19 +158,20 @@ def extract_from_video(path: str, progress: interfaces.ProgressFn | None = None)
                 if not os.path.isfile(frame_file):
                     break
                 try:
-                    ocr_results = ocr_engine(frame_file)
+                    results, _ = ocr_engine(frame_file)
                 except Exception as e:
                     warnings.append(f"OCR failed on {frame_file}: {e}")
                     continue
-                for txt, _conf in ocr_results:
-                    cleaned = txt.strip()
-                    if len(cleaned) < 3:
-                        continue
-                    lowered = cleaned.lower()
-                    if lowered in seen:
-                        continue
-                    seen.add(lowered)
-                    lines.append(cleaned)
+                if results:
+                    for line in results:
+                        if line and len(line) >= 2:
+                            txt = line[1]
+                            if txt and len(txt.strip()) >= 3:
+                                cleaned = txt.strip()
+                                lowered = cleaned.lower()
+                                if lowered not in seen:
+                                    seen.add(lowered)
+                                    lines.append(cleaned)
             ocr_text = "\n".join(lines)
 
     return {
