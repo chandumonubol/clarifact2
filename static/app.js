@@ -261,6 +261,7 @@
     state.selectedFile = null;
     elements.addBtn.textContent = '+';
     elements.addBtn.title = 'Attach file';
+    elements.addBtn.style.background = 'none';
 
     // Show user message
     addMessage({
