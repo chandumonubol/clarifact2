@@ -29,13 +29,13 @@
         <h1 class="main-title">Where should we start?</h1>
       </header>
       <section class="input-section" id="input-section">
-        <div class="input-bar">
-          <button class="attach-btn" id="add-btn" type="button">+</button>
+        <form id="analyze-form" class="input-container">
+          <label for="file-input" class="attach-btn" id="add-btn">+</label>
           <input type="file" id="file-input" style="display:none" accept="image/*,video/">
           <div id="file-preview" class="file-preview" style="display:none;"></div>
-          <input type="text" id="text-input" placeholder="Paste a claim, caption, or link…">
-          <button class="send-btn" id="send-btn" type="submit">Send</button>
-        </div>
+          <textarea id="text-input" placeholder="Paste a claim, caption, or link..."></textarea>
+          <button type="submit" id="send-btn" class="send-btn">Send</button>
+        </form>
               </section>
       <div class="chat-area" id="chat-area">
         <!-- messages and results inserted by JS -->
