@@ -1,11 +1,11 @@
-import sys
+import os
 import time
 from pathlib import Path
 
 # Ensure the project root is on the import path so we can import app modules.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.extract import extract_from_video
+from app.extract import extract_from_video, extract_from_image, extract_from_text
 
 def main():
     if len(sys.argv) != 2:
@@ -28,8 +28,25 @@ def main():
         _prev_stage = stage
         _prev_time = now
 
-    # Run extraction – progress will fill stage_times.
-    result = extract_from_video(video_path, progress=progress)
+    # Choose extraction based on file extension
+    ext = os.path.splitext(video_path)[1].lower()
+    if ext in {".mp4", ".mov", ".avi", ".mkv", ".webm"}:
+        result = extract_from_video(video_path, progress=progress)
+    elif ext in {".jpg", ".jpeg", ".png", ".webp"}:
+        result = extract_from_image(video_path, progress=progress)
+    elif ext == ".gif":
+        print("Error: Unsupported image format (GIF). Use a supported image type like .jpg, .png, .webp.")
+        sys.exit(1)
+    else:
+        # Fallback to treating input as raw text file if it exists
+        try:
+            with open(video_path, "r", encoding="utf-8") as f:
+                text_content = f.read()
+            result = extract_from_text(text_content)
+        except Exception:
+            print(f"Error: Unrecognized file type for '{video_path}'.")
+            sys.exit(1)
+
 
     # Capture the last stage duration (from its start to now).
     if _prev_stage is not None and _prev_time is not None:
