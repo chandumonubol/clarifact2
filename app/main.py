@@ -6,17 +6,24 @@ the ``/jobs/{job_id}`` GET endpoint for job status tracking.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import uuid
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, File, Form, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.interfaces import JobStatus, AnalysisResult, ExtractedContent, ProgressFn
 from .pipeline import analyze_content
 
 app = FastAPI()
+# Mount static files for UI
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # In‑memory job store – keys are job IDs, values are JobStatus dicts.
 _jobs: Dict[str, JobStatus] = {}
@@ -61,20 +68,47 @@ async def analyze(
 ) -> Dict[str, str]:
     """Kick off an analysis job.
 
-    Only the ``text`` field is currently used; ``url`` and ``file`` are accepted
-    for API compatibility but are ignored in this minimal implementation.
+    Accepts ``text`` directly, or a file upload, or a URL. For files and URLs we
+    fall back to placeholder handling (filename or URL string) and add a warning
+    in the ``ExtractedContent``. The real extraction (audio/video OCR, image
+    OCR, downloading) is performed by other agents and will replace these stubs
+    later.
     """
     if not text and not url and not file:
         raise HTTPException(status_code=400, detail="At least one of text, url, or file must be provided")
 
-    # Build a minimal ``ExtractedContent`` – other extraction steps are out of scope
-    # for this brain implementation.
+    warnings: List[str] = []
+    # ---------- File handling ----------
+    if file:
+        # Read the uploaded file (limited to a small size for safety).
+        try:
+            # ``UploadFile`` provides an async ``read`` method.
+            file_bytes = await file.read()
+            # Simple fallback: use the filename as the textual content.
+            # Real extraction (audio/video OCR) is handled by other agents.
+            text = file.filename or ""
+            warnings.append("File extraction not implemented; using filename as text placeholder.")
+        except Exception as exc:
+            warnings.append(f"Failed to read uploaded file: {exc}")
+            text = ""
+    # ---------- URL handling ----------
+    elif url:
+        # In a full implementation we would download and extract content.
+        # Here we treat the URL itself as the text input and note the limitation.
+        text = url
+        warnings.append("URL extraction not implemented; using URL as text placeholder.")
+    else:
+        # ``text`` is already provided (may be None).
+        text = text or ""
+
+    # Build the ``ExtractedContent`` for the pipeline.
     content: ExtractedContent = {
-        "text": text or "",
+        "text": text,
         "transcript": "",
         "ocr_text": "",
-        "warnings": [],
+        "warnings": warnings,
     }
+
 
     job_id = str(uuid.uuid4())
     _jobs[job_id] = {"status": "queued", "step": "Queued", "result": None, "error": None}
@@ -91,6 +125,10 @@ async def get_job(job_id: str) -> JobStatus:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
+
+@app.get("/")
+async def read_index():
+    return FileResponse("static/index.html")
 
 # If this file is executed directly we start the server (useful for manual testing).
 if __name__ == "__main__":
