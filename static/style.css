@@ -488,7 +488,43 @@ a:hover {
   color: #fff;
 }
 
-/* Reduced motion */
+/* Progress bar for live steps */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  padding: var(--space-8) var(--space-12);
+  background: var(--surface-2);
+  border-left: 4px solid var(--link);
+  color: var(--text);
+  margin-bottom: var(--space-16);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+/* Spinner animation for ongoing step */
+.progress-bar.spinning::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: var(--space-8);
+  border: 2px solid var(--link);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive cards – shrink padding on narrow screens */
+@media (max-width: 600px) {
+  .result-card {
+    padding: var(--space-12);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   *,
