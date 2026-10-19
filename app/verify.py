@@ -113,7 +113,9 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
         while attempts < 2:
             try:
                 ddgs = DDGS()
-                results = ddgs.text(q, max_results=5)
+                results = list(ddgs.text(q, max_results=5))
+if not results:
+    raise ValueError("Empty DDGS results")
                 for r in results:
                     title = r.get("title", "")
                     url = r.get("url", "")
@@ -138,7 +140,7 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
             "srsearch": claim_text,
             "format": "json",
         }
-        rsp = httpx.get(wiki_search_url, params=params, timeout=10.0)
+        rsp = httpx.get(wiki_search_url, params=params, timeout=10.0, headers={"User-Agent": "ClariFact/1.0 (contact@clarifact.local)"})
         rsp.raise_for_status()
         data = rsp.json()
         search_results = data.get("query", {}).get("search", [])
@@ -147,7 +149,7 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
             if title:
                 # Fetch summary via REST API
                 summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(title)}"
-                sum_rsp = httpx.get(summary_url, timeout=10.0)
+                sum_rsp = httpx.get(summary_url, timeout=10.0, headers={"User-Agent": "ClariFact/1.0 (contact@clarifact.local)"})
                 sum_rsp.raise_for_status()
                 sum_data = sum_rsp.json()
                 snippet = sum_data.get("extract", "")[:250]
