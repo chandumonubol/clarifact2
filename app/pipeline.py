@@ -54,7 +54,16 @@ def analyze_content(
     # Step 1 – claim extraction & promo detection
     if progress:
         progress("Extracting claims")
-    signals = analyze_claims_and_promo(content)
+    # Combine textual sources for claim analysis (text, OCR, transcript)
+    full_text = " ".join(filter(None, [content.get("text", ""), content.get("ocr_text", ""), content.get("transcript", "")]))
+    # Prepare a minimal content dict for the claims analyzer (preserve warnings)
+    claims_content = {
+        "text": full_text,
+        "transcript": "",
+        "ocr_text": "",
+        "warnings": content.get("warnings", []),
+    }
+    signals = analyze_claims_and_promo(claims_content)
     claims_texts: List[str] = signals.get("claims", [])
     promo: PromoInfo = signals.get("promo", {})
     red_flags: List[str] = signals.get("red_flags", [])
