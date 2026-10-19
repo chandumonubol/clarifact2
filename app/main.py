@@ -23,7 +23,6 @@ from .pipeline import analyze_content
 
 app = FastAPI()
 # Mount static files for UI
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # In‑memory job store – keys are job IDs, values are JobStatus dicts.
 _jobs: Dict[str, JobStatus] = {}
@@ -126,9 +125,7 @@ async def get_job(job_id: str) -> JobStatus:
     return job
 
 
-@app.get("/")
-async def read_index():
-    return FileResponse("static/index.html")
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 # If this file is executed directly we start the server (useful for manual testing).
 if __name__ == "__main__":
