@@ -74,14 +74,14 @@ def compute_credibility_score(
             score -= 20
             top_factors.append("Hidden promotional content detected")
         elif ptype == "disclosed":
-            score -= 5
+            score -= 10
             top_factors.append("Disclosed promotional content detected")
         # "none" incurs no penalty
 
     # Red flags (assumed to be passed via promo.red_flags – the spec lists them separately)
     red_flags = promo.get("red_flags", []) if isinstance(promo.get("red_flags"), list) else []
     for flag in red_flags:
-        score -= 5
+        score -= 15
         top_factors.append(f"Red flag: {flag}")
 
     # Short‑text penalty
