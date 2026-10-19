@@ -1,11 +1,11 @@
-# CLAUDE.md / AGENTS.md — ClariFact working rules
+# AGENTS.md / AGENTS.md — ClariFact working rules
 
 Read `SPEC.md` and `app/interfaces.py` before doing anything. They are the single source of truth.
 (This same text is saved as `AGENTS.md` for OpenCode.)
 
 ## Golden rules
 1. Work on ONE step at a time (the human names it). Do not build ahead.
-2. **Ownership:** at the start of the session the human gives you a list of files you own. Create or edit ONLY those. Never edit `app/interfaces.py`, `requirements.txt`, `SPEC.md`, `CLAUDE.md`, `AGENTS.md`, `.env.example`.
+2. **Ownership:** at the start of the session the human gives you a list of files you own. Create or edit ONLY those. Never edit `app/interfaces.py`, `requirements.txt`, `SPEC.md`, `AGENTS.md`, `AGENTS.md`, `.env.example`.
 3. Never change the API contract or any shape in `app/interfaces.py`. If you think it must change, STOP and ask.
 4. Keep it simple: no new frameworks, no npm/React, no databases, no Docker, no vendor SDKs. Plain Python + plain JS.
 5. If you need a new package, STOP and ask. Don't edit `requirements.txt` and don't `pip install` anything on your own.
