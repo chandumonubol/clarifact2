@@ -6,6 +6,10 @@ the ``/jobs/{job_id}`` GET endpoint for job status tracking.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import uuid
 from typing import Dict, Optional, List
 
