@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from app.interfaces import (
@@ -120,7 +120,7 @@ def analyze_content(
         "warnings": warnings,
     }
     # optional metadata (not defined in the TypedDict but useful for debugging)
-    result["processed_at"] = datetime.utcnow().isoformat() + "Z"
+    result["processed_at"] = datetime.now(timezone.utc).isoformat()
     result["summary"] = f"Analyzed {len(claim_outs)} claim(s)"
     return result
 
