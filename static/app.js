@@ -16,7 +16,8 @@
     newChatBtn: document.querySelector('.sidebar-btn.new-chat'),
   };
 
-  /* Send button enable/disable logic removed per UI simplification */
+  let currentQuery = '';
+
   const esc = (s) => {
     const str = String(s);
     return str.replace(/&/g, '&amp;')
@@ -218,6 +219,7 @@
   };
 
   // Show error state
+  // Show error state
   const showError = (err) => {
     removeProgress();
     elements.chatArea.innerHTML = '';
@@ -230,6 +232,53 @@
     btn.onclick = () => location.reload();
     errorCard.appendChild(btn);
     elements.chatArea.appendChild(errorCard);
+  };
+
+  // History helpers
+  const loadHistory = () => {
+    const data = localStorage.getItem('clarifact_history');
+    return data ? JSON.parse(data) : [];
+  };
+  const saveHistory = (hist) => {
+    localStorage.setItem('clarifact_history', JSON.stringify(hist));
+  };
+  const addHistoryEntry = (title, result) => {
+    const hist = loadHistory();
+    const entry = { title, result, timestamp: Date.now() };
+    hist.unshift(entry);
+    if (hist.length > 50) hist.pop();
+    saveHistory(hist);
+  };
+  const renderHistoryList = () => {
+    const list = elements.recentList;
+    if (!list) return;
+    const hist = loadHistory();
+    list.innerHTML = '';
+    if (hist.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No analyses yet';
+      list.appendChild(empty);
+      return;
+    }
+    hist.forEach(entry => {
+      const item = document.createElement('div');
+      item.className = 'recent-item';
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = entry.title;
+      const badge = document.createElement('span');
+      badge.textContent = entry.result.credibility_score;
+      badge.style.cssText = 'margin-left:auto;background:var(--surface-2);color:var(--text);border-radius:var(--radius-sm);padding:var(--space-4) var(--space-8);font-size:13px;';
+      item.appendChild(titleSpan);
+      item.appendChild(badge);
+      item.addEventListener('click', () => {
+        elements.chatArea.innerHTML = '';
+        document.body.classList.add('has-messages');
+        addMessage({ id: 'user-' + Date.now(), type: 'user', text: entry.title });
+        renderResults(entry.result);
+      });
+      list.appendChild(item);
+    });
   };
 
   // Handle sending
@@ -246,6 +295,7 @@
 
     const formData = new FormData();
     formData.append('text', formText);
+    currentQuery = formText;
 
     // If there's a file attached from the file picker
     const attachedFile = state.selectedFile;
@@ -405,7 +455,10 @@
       elements.addBtn.textContent = '+';
       elements.addBtn.title = 'Attach file';
       elements.addBtn.style.background = 'none';
+      // clear current query tracking
+      currentQuery = '';
     };
   }
-  // elements.addBtn.onclick();
+  // Populate history sidebar on load
+  renderHistoryList();
 })();
