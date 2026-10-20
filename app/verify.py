@@ -110,7 +110,12 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
     # a) DuckDuckGo (ddgs)
     for q in queries:
         attempts = 0
+        start_time = time.time()
         while attempts < 2:
+            # Abort if DDGS search exceeds 5 seconds total for this query.
+            if time.time() - start_time > 5:
+                logging.warning(f"DDGS search timeout for query '{q}'")
+                break
             try:
                 ddgs = DDGS()
                 results = list(ddgs.text(q, max_results=5))
