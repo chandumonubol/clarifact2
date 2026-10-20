@@ -79,17 +79,29 @@ async def analyze(
     warnings: List[str] = []
     # ---------- File handling ----------
     if file:
+        # Validate file extension before processing.
+        filename = file.filename or ""
+        allowed_extensions = {".txt", ".pdf", ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".tiff"}
+        ext = Path(filename).suffix.lower()
+        if ext not in allowed_extensions:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
         # Read the uploaded file (limited to a small size for safety).
         try:
             # ``UploadFile`` provides an async ``read`` method.
             file_bytes = await file.read()
             # Simple fallback: use the filename as the textual content.
             # Real extraction (audio/video OCR) is handled by other agents.
-            text = file.filename or ""
+            text = filename
             warnings.append("File extraction not implemented; using filename as text placeholder.")
         except Exception as exc:
             warnings.append(f"Failed to read uploaded file: {exc}")
             text = ""
+        finally:
+            # Ensure any underlying file resources are released.
+            try:
+                await file.close()
+            except Exception:
+                pass
     # ---------- URL handling ----------
     elif url:
         # In a full implementation we would download and extract content.
