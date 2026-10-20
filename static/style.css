@@ -411,6 +411,29 @@ body {
   text-decoration: underline;
 }
 
+/* Domain authority badge for source links */
+.domain-badge {
+  margin-left: 4px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+}
+.domain-badge.good { background: var(--good-bg); color: var(--good-text); }
+.domain-badge.caution { background: var(--caution-bg); color: var(--caution-text); }
+.domain-badge.bad { background: var(--bad-bg); color: var(--bad-text); }
+
+/* Score breakdown expander */
+.breakdown-header {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+.breakdown-content ul {
+  list-style: disc inside;
+  margin-left: var(--space-8);
+}
+
+
 /* Red flags */
 .red-flags .pill {
   background: var(--bad-bg);
