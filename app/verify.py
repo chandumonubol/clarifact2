@@ -12,7 +12,7 @@ import urllib.parse
 from typing import List, Dict
 
 import httpx
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 
 from app.interfaces import (
     VerifiedClaim,
