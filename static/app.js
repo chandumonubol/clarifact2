@@ -27,6 +27,18 @@
               .replace(/'/g, '&#39;');
   };
 
+  // Helper to determine domain authority for a source URL
+  const getAuthority = (url) => {
+    try {
+      const host = new URL(url).hostname;
+      if (/\b(wikipedia|nytimes|bbc|theguardian)\.org$/.test(host) || /\.(edu|gov|mil)$/.test(host)) return 'High';
+      if (/\.com$/.test(host) || /\.net$/.test(host)) return 'Medium';
+      return 'Low';
+    } catch (e) {
+      return 'Low';
+    }
+  };
+
   // Show a message bubble in the chat
   const addMessage = (msg) => {
     const div = document.createElement('div');
@@ -117,7 +129,47 @@
       </div>
       <div class="confidence-chip" id="confidence-chip"></div>
     `;
-    elements.chatArea.appendChild(scoreCard);
+    // Insert score breakdown expander
+    const breakdownCard = document.createElement('div');
+    breakdownCard.className = 'result-card';
+    breakdownCard.innerHTML = `
+      <div class="breakdown-header" style="cursor:pointer;font-weight:600;">Score breakdown (click to expand)</div>
+      <div class="breakdown-content" style="display:none;margin-top:8px;"></div>
+    `;
+    elements.chatArea.appendChild(breakdownCard);
+    // Toggle handler
+    const header = breakdownCard.querySelector('.breakdown-header');
+    const content = breakdownCard.querySelector('.breakdown-content');
+    header.addEventListener('click', () => {
+      const visible = content.style.display === 'block';
+      content.style.display = visible ? 'none' : 'block';
+    });
+    // Build breakdown details
+    const computeBreakdown = () => {
+      const lines = [];
+      let base = 100;
+      lines.push(`<li>Base: 100</li>`);
+      // Claims penalties
+      const verdictCounts = { contradicted:0, misleading:0, unverified:0 };
+      result.claims.forEach(c => {
+        if (c.verdict in verdictCounts) verdictCounts[c.verdict]++;
+      });
+      if (verdictCounts.contradicted) lines.push(`<li>Contradicted claims (${verdictCounts.contradicted}): -${verdictCounts.contradicted * 25}</li>`);
+      if (verdictCounts.misleading) lines.push(`<li>Misleading claims (${verdictCounts.misleading}): -${verdictCounts.misleading * 15}</li>`);
+      if (verdictCounts.unverified) lines.push(`<li>Unverified claims (${verdictCounts.unverified}): -${verdictCounts.unverified * 5}</li>`);
+      // Promo penalties
+      if (result.promo && result.promo.detected) {
+        const promoLoss = result.promo.type === 'hidden' ? 20 : result.promo.type === 'disclosed' ? 5 : 0;
+        if (promoLoss) lines.push(`<li>Promotion (${result.promo.type}): -${promoLoss}</li>`);
+      }
+      // Red flag penalties (capped at 20)
+      const redFlagLoss = Math.min(result.red_flags.length * 5, 20);
+      if (redFlagLoss) lines.push(`<li>Red flags (${result.red_flags.length}): -${redFlagLoss}</li>`);
+      // Final score
+      lines.push(`<li><strong>Final score: ${result.credibility_score}</strong></li>`);
+      return `<ul style="padding-left:1.2em;">${lines.join('')}</ul>`;
+    };
+    content.innerHTML = computeBreakdown();
 
     const labelMap = { Credible: 'var(--good-text)', 'Use caution': 'var(--caution-text)', 'Likely misleading': 'var(--bad-text)' };
     const labelColor = labelMap[result.label] || 'red';
@@ -161,10 +213,15 @@
     claimsList.className = 'claims-list';
     result.claims.forEach((c, i) => {
       const verdictClass = { supported: 'supported', contradicted: 'contradicted', misleading: 'misleading', unverified: 'unverified' }[c.verdict] || 'unverified';
-      const srcHtml = c.sources && c.sources.length ? c.sources.map(s => `<a class="source-chip" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(' ') : '<em>none</em>';
+      // Build source chips with domain authority badges
+      const srcHtml = c.sources && c.sources.length ? c.sources.map(s => {
+        const authority = getAuthority(s.url);
+        const badgeClass = authority === 'High' ? 'good' : authority === 'Medium' ? 'caution' : 'bad';
+        return `<a class="source-chip" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)} <span class="domain-badge ${badgeClass}">${authority}</span></a>`;
+      }).join(' ') : '<em>none</em>';
       const item = document.createElement('div');
       item.className = `claim-item`;
-      item.innerHTML = `<div class="claim-verdict ${verdictClass}">${c.verdict}</div><div class="claim-text">${esc(c.text)}</div><div class="claim-explanation">${esc(c.explanation)}</div><div class="sources-list">${srcHtml}</div>`;
+      item.innerHTML = `<div class="claim-verdict ${verdictClass}">${c.verdict}</div><div class="claim-text">${esc(c.text)}</div><div class="claim-explanation">${esc(c.explanation)}</div><div class="sources-list"><strong>SOURCES & EVIDENCE:</strong> ${srcHtml}</div>`;
       claimsList.appendChild(item);
     });
     claimsDiv.appendChild(claimsList);
