@@ -124,4 +124,52 @@ def analyze_content(
     result["summary"] = f"Analyzed {len(claim_outs)} claim(s)"
     return result
 
+
+
+from pathlib import Path
+from typing import Optional
+
+def run_pipeline(
+        text: str | None,
+        file_path: str | None,
+        url: str | None,
+        progress: ProgressFn,
+) -> AnalysisResult:
+    """Public entry point that accepts raw text, a file path, or a URL.
+
+    It builds an :class:`ExtractedContent` record, handling simple ``.txt`` files
+    by reading their contents. Non‑text files and URLs fall back to a placeholder
+    using the filename/URL and record a warning – the full extraction pipeline
+    will replace this stub later.
+    """
+    warnings: list[str] = []
+    content_text = ""
+    if text:
+        content_text = text
+    elif file_path:
+        p = Path(file_path)
+        if p.suffix.lower() == ".txt":
+            try:
+                content_text = p.read_text(encoding="utf-8", errors="replace")
+            except Exception as exc:
+                warnings.append(f"Failed to read txt file '{file_path}': {exc}")
+        else:
+            # Placeholder handling for unsupported file types.
+            content_text = p.name
+            warnings.append("File extraction not implemented; using filename as placeholder.")
+    elif url:
+        content_text = url
+        warnings.append("URL extraction not implemented; using URL as placeholder.")
+    else:
+        warnings.append("No input provided.")
+
+    # Build the ExtractedContent dict expected by ``analyze_content``.
+    extracted_content = {
+        "text": content_text,
+        "transcript": "",
+        "ocr_text": "",
+        "warnings": warnings,
+    }
+    return analyze_content(extracted_content, progress)
+
 # End of file
