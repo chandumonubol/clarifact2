@@ -12,7 +12,7 @@ import urllib.parse
 from typing import List, Dict
 
 import httpx
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 from app.interfaces import (
     VerifiedClaim,
@@ -22,7 +22,7 @@ from app.interfaces import (
 from app.llm import llm_json
 
 # ---------------------------------------------------------------------------
-# Helper utilities
+_ddgs_client = DDGS()
 # ---------------------------------------------------------------------------
 
 def _run_llm(prompt: str) -> dict:
@@ -70,7 +70,18 @@ def _trim_to_limit(evidence_strings: List[str], limit: int = 1500) -> List[str]:
     return out
 
 # ---------------------------------------------------------------------------
-# Main verification function
+def _simplify_query(query: str) -> str:
+    """Simplify a generated query to its core 4‑6 keywords.
+
+    Tokenises, removes stopwords, keeps up to six longest tokens.
+    """
+    import re
+    stopwords = {"the","a","an","and","or","of","for","to","in","on","by","with","is","are","was","were","be","has","have","it","this","that"}
+    tokens = re.findall(r"[A-Za-z0-9]+", query.lower())
+    filtered = [t for t in tokens if t not in stopwords and len(t) > 1]
+    filtered.sort(key=len, reverse=True)
+    core = filtered[:6]
+    return " ".join(core)
 # ---------------------------------------------------------------------------
 
 def verify_claim(claim_text: str) -> VerifiedClaim:
@@ -117,21 +128,25 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
                 logging.warning(f"DDGS search timeout for query '{q}'")
                 break
             try:
-                ddgs = DDGS()
-                results = list(ddgs.text(q, max_results=5))
+                # Simplify the generated query to core keywords before searching.
+                simplified_q = _simplify_query(q)
+                results = list(_ddgs_client.text(simplified_q, max_results=5))
                 if not results:
-                    raise ValueError("Empty DDGS results")
-                for r in results:
-                    title = r.get("title", "")
-                    url = r.get("url", "")
-                    snippet = r.get("body", "") or r.get("snippet", "")
-                    if url:
-                        evidence_items.append({
-                            "title": title,
-                            "url": url,
-                            "snippet": snippet[:250],
-                        })
-                break
+                    # No results for this simplified query – treat as empty and try next attempt.
+                    logging.debug(f"No DDGS results for query '{simplified_q}'")
+                    # Do not break; allow retry or next query.
+                else:
+                    for r in results:
+                        title = r.get("title", "")
+                        url = r.get("url", "")
+                        snippet = r.get("body", "") or r.get("snippet", "")
+                        if url:
+                            evidence_items.append({
+                                "title": title,
+                                "url": url,
+                                "snippet": snippet[:250],
+                            })
+                    break
             except Exception as exc:  # pragma: no cover – network/parse errors
                 attempts += 1
                 logging.warning(f"DDGS search failed (attempt {attempts}) for query '{q}': {exc}")
