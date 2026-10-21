@@ -128,6 +128,14 @@ def analyze(content: ExtractedContent) -> Signals:
     disclosure_hits = _detect_keywords(all_text, DISCLOSURE_KEYWORDS)
     commercial_hits = _detect_keywords(all_text, COMMERCIAL_KEYWORDS)
 
+    # Heuristic hidden promo detection based on content cues (e.g., filenames indicating ads)
+    heuristic_hidden = False
+    if all_text:
+        lower_all = all_text.lower()
+        heuristic_keywords = ["ad", "advert", "sponsored", "promo", "miracle", "weight loss", "discount", "code", "offer"]
+        if any(k in lower_all for k in heuristic_keywords):
+            heuristic_hidden = True
+
     promo: PromoInfo = {"detected": False, "type": "none", "evidence": []}
     if disclosure_hits:
         promo["detected"] = True
@@ -139,12 +147,14 @@ def analyze(content: ExtractedContent) -> Signals:
         if isinstance(hidden_promo_raw, dict):
             hidden_flag = bool(hidden_promo_raw.get("value"))
             reason = hidden_promo_raw.get("reason", "") or ""
-        if commercial_hits or hidden_flag:
+        if commercial_hits or hidden_flag or heuristic_hidden:
             promo["detected"] = True
             promo["type"] = "hidden"
             evidence = list(commercial_hits)
             if reason:
                 evidence.append(reason)
+            if heuristic_hidden and not evidence:
+                evidence.append("heuristic hidden promo detection")
             promo["evidence"] = evidence
 
     # ---------- 6. Assemble Signals ----------
