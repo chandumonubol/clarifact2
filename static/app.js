@@ -341,7 +341,7 @@
   // Handle sending
   const send = async () => {
     const text = elements.textInput.value.trim();
-    if (!text) return;
+    if (!text && !state.selectedFile) return;
 
     // Check if text starts with http -> send as url, else as text
     let formText = text;
@@ -351,7 +351,7 @@
     }
 
     const formData = new FormData();
-    formData.append('text', formText);
+    if (formText) { formData.append('text', formText); }
     currentQuery = formText;
 
     // If there's a file attached from the file picker
