@@ -64,6 +64,9 @@ def analyze_content(
         "warnings": content.get("warnings", []),
     }
     signals = analyze_claims_and_promo(claims_content)
+    # If no claims were extracted, discard any red‑flags (they are irrelevant without claims).
+    if not signals.get("claims"):
+        signals["red_flags"] = []
     claims_texts: List[str] = signals.get("claims", [])
     promo: PromoInfo = signals.get("promo", {})
     red_flags: List[str] = signals.get("red_flags", [])

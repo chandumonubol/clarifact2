@@ -132,7 +132,7 @@ def analyze(content: ExtractedContent) -> Signals:
     heuristic_hidden = False
     if all_text:
         lower_all = all_text.lower()
-        heuristic_keywords = ["ad", "advert", "sponsored", "promo", "miracle", "weight loss", "discount", "code", "offer"]
+        heuristic_keywords = ["ad", "advert", "sponsored", "promo", "miracle", "weight loss", "discount", "code", "offer", "false", "health"]
         if any(k in lower_all for k in heuristic_keywords):
             heuristic_hidden = True
 
