@@ -79,18 +79,26 @@ async def analyze(
     warnings: List[str] = []
     # ---------- File handling ----------
     if file:
-        # Validate file extension before processing.
+        # Validate file extension and MIME type before processing.
         filename = file.filename or ""
-        allowed_extensions = {".txt", ".pdf", ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".tiff"}
-        ext = Path(filename).suffix.lower()
-        if ext not in allowed_extensions:
-            raise HTTPException(status_code=400, detail="Unsupported file type")
+        # Supported video MIME types.
+        supported_video_mimes = {"video/mp4", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/webm"}
+        content_type = file.content_type or ""
+        # Allow any file extension for videos, but enforce MIME type whitelist.
+        if content_type.startswith("video/"):
+            if content_type not in supported_video_mimes:
+                raise HTTPException(status_code=400, detail="Unsupported video type")
+        else:
+            # Non-video files: restrict to known safe extensions.
+            allowed_extensions = {".txt", ".pdf", ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".tiff"}
+            ext = Path(filename).suffix.lower()
+            if ext not in allowed_extensions:
+                raise HTTPException(status_code=400, detail="Unsupported file type")
         # Read the uploaded file (limited to a small size for safety).
         try:
-            # ``UploadFile`` provides an async ``read`` method.
             file_bytes = await file.read()
-            # Simple fallback: use the filename as the textual content.
-            # Real extraction (audio/video OCR) is handled by other agents.
+            # Placeholder handling: for video files we could invoke a media extractor.
+            # Currently we fall back to using the filename as placeholder text.
             text = filename
             warnings.append("File extraction not implemented; using filename as text placeholder.")
         except Exception as exc:
