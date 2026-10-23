@@ -8,6 +8,7 @@ speech‑to‑text and RapidOCR (rapidocr_onnxruntime) for on‑screen OCR.
 """
 
 import logging
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -64,8 +65,15 @@ def extract_from_video(file_path: str, progress: Optional[ProgressFn] = None) ->
     whisper = _load_whisper()
     if whisper:
         try:
-            segments, _ = whisper.transcribe(file_path, beam_size=5)
-            # ``segments`` is an iterable of objects with a ``text`` attribute.
+            # Decode audio to mono 16kHz PCM using ffmpeg.
+            cmd = ["ffmpeg", "-i", file_path, "-f", "s16le", "-ac", "1", "-ar", "16000", "-"]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True)
+            raw_audio = result.stdout
+            if raw_audio:
+                audio_np = np.frombuffer(raw_audio, dtype=np.int16).astype(np.float32) / 32768.0
+            else:
+                audio_np = np.array([], dtype=np.float32)
+            segments, _ = whisper.transcribe(audio_np, beam_size=5)
             transcript = " ".join(seg.text for seg in segments)
         except Exception as exc:
             logging.exception("Whisper transcription failed")
@@ -101,7 +109,7 @@ def extract_from_video(file_path: str, progress: Optional[ProgressFn] = None) ->
                     for res in results:
                         if isinstance(res, (list, tuple)) and len(res) >= 3:
                             txt = res[1]
-                            if txt and txt.strip():
+                            if isinstance(txt, str) and txt.strip():
                                 texts.append(txt.strip())
                 frame_idx += 1
             cap.release()
