@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import os
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import uuid
@@ -37,7 +38,6 @@ def _progress_updater(job_id: str) -> ProgressFn:
     The function is safe for background execution because the ``_jobs`` dict is
     thread‑safe for simple single‑process usage.
     """
-
     def _update(step: str) -> None:
         job = _jobs.get(job_id)
         if job:
@@ -99,23 +99,31 @@ async def analyze(
             ext = Path(filename).suffix.lower()
             if ext not in allowed_extensions:
                 raise HTTPException(status_code=400, detail="Unsupported file type")
-                # Read the uploaded file (limited to a small size for safety).
+        # Read the uploaded file (limited to a small size for safety).
         try:
             file_bytes = await file.read()
-# Real extraction: write uploaded bytes to a temporary file and process.
-with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as tmp:
-    tmp.write(file_bytes)
-    tmp_path = tmp.name
-try:
-    extraction = extract_from_video(tmp_path, progress=None)
-    text = extraction.get("text", filename)
-    transcript = extraction.get("transcript", "")
-    ocr_text = extraction.get("ocr_text", "")
-    warnings.extend(extraction.get("warnings", []))
-except Exception as exc:
-    logging.exception("Video extraction failed")
-    warnings.append(f"Video extraction failed: {exc}")
-    text = filename
+            # Write uploaded bytes to a temporary file for extraction.
+            suffix = Path(filename).suffix if filename else ".mp4"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(file_bytes)
+                tmp_path = tmp.name
+            try:
+                extraction = extract_from_video(tmp_path, progress=None)
+                text = extraction.get("text", filename)
+                transcript = extraction.get("transcript", "")
+                ocr_text = extraction.get("ocr_text", "")
+                warnings.extend(extraction.get("warnings", []))
+            except Exception as exc:
+                logging.exception("Video extraction failed")
+                warnings.append(f"Video extraction failed: {exc}")
+                text = filename
+            finally:
+                # Cleanup temp file if it exists.
+                try:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                except Exception:
+                    pass
         except Exception as exc:
             warnings.append(f"Failed to read uploaded file: {exc}")
             text = ""
@@ -142,7 +150,6 @@ except Exception as exc:
         "ocr_text": ocr_text,
         "warnings": warnings,
     }
-
 
     job_id = str(uuid.uuid4())
     _jobs[job_id] = {"status": "queued", "step": "Queued", "result": None, "error": None}
