@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from app.interfaces import JobStatus, AnalysisResult, ExtractedContent, ProgressFn
 import logging
 import tempfile
-from app.extract import combine_sources
+from app.extract import extract_from_video
 from .pipeline import analyze_content
 
 app = FastAPI()
@@ -102,9 +102,20 @@ async def analyze(
                 # Read the uploaded file (limited to a small size for safety).
         try:
             file_bytes = await file.read()
-            # Placeholder handling: we do not have real media extraction functions.
-            text = filename
-            warnings.append("File extraction not implemented; using filename as text placeholder.")
+# Real extraction: write uploaded bytes to a temporary file and process.
+with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as tmp:
+    tmp.write(file_bytes)
+    tmp_path = tmp.name
+try:
+    extraction = extract_from_video(tmp_path, progress=None)
+    text = extraction.get("text", filename)
+    transcript = extraction.get("transcript", "")
+    ocr_text = extraction.get("ocr_text", "")
+    warnings.extend(extraction.get("warnings", []))
+except Exception as exc:
+    logging.exception("Video extraction failed")
+    warnings.append(f"Video extraction failed: {exc}")
+    text = filename
         except Exception as exc:
             warnings.append(f"Failed to read uploaded file: {exc}")
             text = ""
