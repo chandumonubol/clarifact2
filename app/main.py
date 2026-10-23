@@ -19,6 +19,9 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.interfaces import JobStatus, AnalysisResult, ExtractedContent, ProgressFn
+import logging
+import tempfile
+from app.extract import extract_from_video, extract_from_image
 from .pipeline import analyze_content
 
 app = FastAPI()
@@ -77,6 +80,8 @@ async def analyze(
         raise HTTPException(status_code=400, detail="At least one of text, url, or file must be provided")
 
     warnings: List[str] = []
+    transcript = ""
+    ocr_text = ""
     # ---------- File handling ----------
     if file:
         # Validate file extension and MIME type before processing.
@@ -97,10 +102,29 @@ async def analyze(
         # Read the uploaded file (limited to a small size for safety).
         try:
             file_bytes = await file.read()
-            # Placeholder handling: for video files we could invoke a media extractor.
-            # Currently we fall back to using the filename as placeholder text.
-            text = filename
-            warnings.append("File extraction not implemented; using filename as text placeholder.")
+            # Attempt real extraction using appropriate extractor
+            # Write uploaded bytes to a temporary file for extraction
+            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as tmp:
+                tmp.write(file_bytes)
+                tmp_path = tmp.name
+            try:
+                if content_type.startswith("video/"):
+                    extracted = extract_from_video(tmp_path, progress=None)
+                elif content_type.startswith("image/"):
+                    extracted = extract_from_image(tmp_path, progress=None)
+                else:
+                    extracted = {"text": filename, "transcript": "", "ocr_text": "", "warnings": []}
+            except Exception as exc:
+                logging.exception("Media extraction failed")
+                extracted = {"text": filename, "transcript": "", "ocr_text": "", "warnings": [f"Extraction failed: {exc}"]}
+            # Use extracted values
+            text = extracted.get("text", filename)
+            transcript = extracted.get("transcript", "")
+            ocr_text = extracted.get("ocr_text", "")
+            warnings.extend(extracted.get("warnings", []))
+            # Log a preview of extracted content (first 100 chars)
+            logging.info(f"Extracted transcript preview: {transcript[:100]!r}")
+            logging.info(f"Extracted OCR preview: {ocr_text[:100]!r}")
         except Exception as exc:
             warnings.append(f"Failed to read uploaded file: {exc}")
             text = ""
@@ -123,8 +147,8 @@ async def analyze(
     # Build the ``ExtractedContent`` for the pipeline.
     content: ExtractedContent = {
         "text": text,
-        "transcript": "",
-        "ocr_text": "",
+        "transcript": transcript,
+        "ocr_text": ocr_text,
         "warnings": warnings,
     }
 
