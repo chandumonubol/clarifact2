@@ -545,18 +545,60 @@ a:hover {
   to { transform: rotate(360deg); }
 }
 
-/* File preview badge */
-.file-preview {
-  display: inline-block;
-  margin-left: var(--space-8);
-  padding: var(--space-4) var(--space-8);
-  background: var(--surface-2);
+/* Search bar and upload UI tweaks */
+/* Text input transparent styling */
+#text-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
   color: var(--text);
+  font-family: var(--font-stack);
+  line-height: 1.5;
+  padding: 0;
+  resize: none;
+}
+
+/* File preview chip styling */
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: #1e1e24;
+  color: var(--text);
+  border: 1px solid #2d2d38;
   border-radius: var(--radius-sm);
   max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: var(--space-4) var(--space-8);
+}
+
+/* Add file icon before name */
+.file-preview::before {
+  content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="%23fff"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>');
+  width: 12px;
+  height: 12px;
+}
+
+/* Send button styling */
+.input-container button {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 var(--space-8);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.input-container button:hover {
+  background: var(--surface);
 }
 
 /* Ensure upload button stays leftmost */
@@ -599,11 +641,13 @@ a:hover {
 /* Message bubbles */
 
 .input-container button {
-  width: 40px;
+  min-width: 40px;
   height: 40px;
+  padding: 0 var(--space-8);
   border: none;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
