@@ -291,7 +291,27 @@
     elements.chatArea.appendChild(errorCard);
   };
 
-  // History helpers
+  // History helpers (added after status functions)
+
+// Status badge helpers
+const showStatus = (msg) => {
+  let badge = document.getElementById('status-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'status-badge';
+    badge.className = 'status-badge';
+    elements.chatArea.appendChild(badge);
+  }
+  badge.textContent = msg;
+  badge.style.display = 'block';
+};
+
+const hideStatus = () => {
+  const badge = document.getElementById('status-badge');
+  if (badge) badge.remove();
+};
+
+// History helpers
   const loadHistory = () => {
     const data = localStorage.getItem('clarifact_history');
     return data ? JSON.parse(data) : [];
@@ -403,6 +423,7 @@
   const pollJob = async () => {
     if (!state.jobId) return;
     showProgress('Queued');
+    showStatus('Queued...');
     while (state.jobId) {
       try {
         const resp = await fetch(`/jobs/${state.jobId}`);
@@ -413,16 +434,21 @@
         }
         if (!resp.ok) throw new Error('API error');
 
-        // Update progress based on step
-        if (data.step) {
-          showProgress(data.step);
-        }
-
-        if (data.status === 'done') {
+        // Update UI status based on job status
+        if (data.status === 'queued') {
+          showStatus('Queued...');
+        } else if (data.status === 'running') {
+          // Show step progress if available
+          if (data.step) showProgress(data.step);
+          const stepText = data.step || 'Processing...';
+          showStatus(stepText);
+        } else if (data.status === 'done') {
+          hideStatus();
           removeProgress();
           renderResults(data.result);
           break;
         } else if (data.status === 'error') {
+          hideStatus();
           removeProgress();
           showError(data.error || 'Analysis failed');
           break;
