@@ -694,6 +694,16 @@ a:hover {
 
 
 /* Hide sidebar on narrow screens */
+
+/* Status badge UI */
+.status-badge {
+  display: inline-block;
+  padding: var(--space-8) var(--space-12);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-16);
+}
 @media (max-width: 800px) {
   .sidebar {
     display: none;
