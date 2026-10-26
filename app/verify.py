@@ -71,7 +71,7 @@ def _trim_to_limit(evidence_strings: List[str], limit: int = 1500) -> List[str]:
 
 # ---------------------------------------------------------------------------
 def _simplify_query(query: str) -> str:
-    """Simplify a generated query to its core 4‑6 keywords.
+    """Simplify a generated query to its core 3‑6 keywords.
 
     Tokenises, removes stopwords, keeps up to six longest tokens.
     """
@@ -102,7 +102,7 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
     # --------------------------------------------------------------------
     try:
         query_prompt = (
-            "Generate 1‑2 short web‑search queries that would help verify the following claim. "
+            "Generate 1‑2 concise web‑search queries, each 3‑6 words, that would help verify the following claim."
             "Return ONLY JSON with the key \"queries\": [\"...\", \"...\"].\n"
             f"Claim: {claim_text}"
         )
@@ -120,37 +120,24 @@ def verify_claim(claim_text: str) -> VerifiedClaim:
     evidence_items: List[Dict] = []
     # a) DuckDuckGo (ddgs)
     for q in queries:
-        attempts = 0
-        start_time = time.time()
-        while attempts < 2:
-            # Abort if DDGS search exceeds 5 seconds total for this query.
-            if time.time() - start_time > 5:
-                logging.warning(f"DDGS search timeout for query '{q}'")
-                break
-            try:
-                # Simplify the generated query to core keywords before searching.
-                simplified_q = _simplify_query(q)
-                results = list(_ddgs_client.text(simplified_q, max_results=5))
-                if not results:
-                    # No results for this simplified query – treat as empty and try next attempt.
-                    logging.debug(f"No DDGS results for query '{simplified_q}'")
-                    # Do not break; allow retry or next query.
-                else:
-                    for r in results:
-                        title = r.get("title", "")
-                        url = r.get("url", "")
-                        snippet = r.get("body", "") or r.get("snippet", "")
-                        if url:
-                            evidence_items.append({
-                                "title": title,
-                                "url": url,
-                                "snippet": snippet[:250],
-                            })
-                    break
-            except Exception as exc:  # pragma: no cover – network/parse errors
-                attempts += 1
-                logging.warning(f"DDGS search failed (attempt {attempts}) for query '{q}': {exc}")
-                time.sleep(0.5)
+        # Simplify the generated query to core keywords before searching.
+        simplified_q = _simplify_query(q)
+        try:
+            results = list(_ddgs_client.text(simplified_q, max_results=5))
+            if results:
+                for r in results:
+                    title = r.get("title", "")
+                    url = r.get("url", "")
+                    snippet = r.get("body", "") or r.get("snippet", "")
+                    if url:
+                        evidence_items.append({
+                            "title": title,
+                            "url": url,
+                            "snippet": snippet[:250],
+                        })
+        except Exception as exc:  # pragma: no cover – network/parse errors
+            # Silently ignore DDGS failures; do not spam logs.
+            logging.debug(f"DDGS search exception for query '{simplified_q}': {exc}")
     # b) Wikipedia
     try:
         wiki_search_url = "https://en.wikipedia.org/w/api.php"
