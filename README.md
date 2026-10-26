@@ -33,6 +33,27 @@
 
 ## 3. Prerequisites
 
+## 0️⃣ Quick Start (Agent‑Friendly)
+
+The following commands are sufficient for an automated agent (or a human) to get the project up‑and‑running after cloning the repo:
+
+```powershell
+git clone <repo‑url>
+cd clarifact   # or the folder name you cloned into
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1   # PowerShell; on macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+copy .env.example .env   # Windows; on Unix: cp .env.example .env
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+All required python packages are listed in `requirements.txt`. The environment variables required for optional cloud LLM providers and the Fact‑Check API are defined in `.env.example`; the defaults will run the local Ollama model (`qwen2.5:3b`). The server will be reachable at `http://127.0.0.1:8000`.
+
+**Recent changes**
+- Verification now generates concise 3‑6 word search queries and never injects unrelated fallback text when no results are found.
+- Scoring aligns with the SPEC and uses the label constants `LABEL_CREDIBLE`, `LABEL_CAUTION`, `LABEL_MISLEADING` from `app/interfaces.py`.
+
+
 - **Python** 3.12 or newer
 - **Git**
 - **FFmpeg** (including `ffprobe`) – must be on `PATH`
