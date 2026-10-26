@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import List, TypedDict
 
-from app.interfaces import VerifiedClaim, PromoInfo
+from app.interfaces import VerifiedClaim, PromoInfo, LABEL_CREDIBLE, LABEL_CAUTION, LABEL_MISLEADING
 
 
 class CredibilityScore(TypedDict, total=False):
@@ -54,18 +54,19 @@ def compute_credibility_score(
             # no penalty
             continue
         elif verdict == "unverified":
-            score -= 10
+            score -= 5
             top_factors.append(f"Unverified claim: {claim.get('text', '')}")
         elif verdict == "misleading":
-            score -= 20
+            score -= 15
             top_factors.append(f"Misleading claim: {claim.get('text', '')}")
         elif verdict == "contradicted":
-            score -= 35
+            score -= 25
             top_factors.append(f"Contradicted claim: {claim.get('text', '')}")
-        # else: unknown verdict – treat as unverified
         else:
-            score -= 10
+            # unknown verdict – treat as unverified
+            score -= 5
             top_factors.append(f"Unknown verdict claim treated as unverified: {claim.get('text', '')}")
+
 
     # Promo penalties
     if promo.get("detected"):
@@ -74,20 +75,17 @@ def compute_credibility_score(
             score -= 20
             top_factors.append("Hidden promotional content detected")
         elif ptype == "disclosed":
-            score -= 10
+            score -= 5
             top_factors.append("Disclosed promotional content detected")
         # "none" incurs no penalty
 
-    # Red flags (assumed to be passed via promo.red_flags – the spec lists them separately)
+    # Red flags (each -5, cap total -20)
     red_flags = promo.get("red_flags", []) if isinstance(promo.get("red_flags"), list) else []
-    for flag in red_flags:
-        score -= 15
-        top_factors.append(f"Red flag: {flag}")
+    red_penalty = min(len(red_flags) * 5, 20)
+    if red_penalty:
+        score -= red_penalty
+        top_factors.append(f"Red flags ({len(red_flags)}): {', '.join(red_flags[:3])}")
 
-    # Short‑text penalty
-    if text_len < 30 and not claims:
-        score -= 10
-        top_factors.append("Very short text with no checkable claims")
 
     # Clamp score
     if score < 0:
@@ -95,13 +93,13 @@ def compute_credibility_score(
     elif score > 100:
         score = 100
 
-    # Determine label
-    if score >= 80:
-        label = "High Trust"
+    # Determine label using interface constants
+    if score >= 75:
+        label = LABEL_CREDIBLE
     elif score >= 50:
-        label = "Mixed / Low Trust"
+        label = LABEL_CAUTION
     else:
-        label = "Very Low / Unreliable"
+        label = LABEL_MISLEADING
 
     # Limit top_factors to 4 entries (most severe first)
     top_factors = top_factors[:4]
